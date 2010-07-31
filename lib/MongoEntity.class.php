@@ -14,7 +14,8 @@ class MongoEntity {
   protected $_mongo_port = MongoEntity::MONGO_PORT; # Server port number
   protected $_mongo_database = "test";        # Effectively the database name
   protected $_mongo_collection = "test";      # Effectively the table name
-  protected $_mongo_timeout = 5000;           # 5 second default timeout on connect
+  protected $_mongo_connection_timeout = 5000;     # 5 second default timeout on connect
+  protected $_mongo_query_timeout = 1000;
 
   protected $_id;
   protected $_data = array();
@@ -30,9 +31,19 @@ class MongoEntity {
   }
 
   private function _set_data($data = array()){
+    // Extra brains to extract the ID from the data.
+    // Useful when it comes time to save.
+    if(isset($data['id'])) { 
+      $this->_id = $data['id']; 
+      unset($data['id']);
+    }
+    elseif(isset($data['_id'])) { 
+      $this->_id = $data['_id']; 
+      unset($data['_id']);
+    }
+
+    // Set the actual local copy
     $this->_data = $data;
-    if(isset($data['id'])) { $this->_id = $data['id']; }
-    elseif(isset($data['_id'])) { $this->_id = $data['_id']; }
   }
 
   protected static function getConnectionString($server,$port) {
@@ -79,8 +90,7 @@ class MongoEntity {
       return $collection;
     }
     catch (Exception $e) {
-      /* TODO FIX */
-      print "Error\n";
+      /* Add logging */
     }
     return FALSE;
   } // function loadCollection($collectionName,$serverName,$portNumber
@@ -168,6 +178,7 @@ class MongoEntity {
       return $this->_setSubArray($field, $value, $data);
     }
     else{
+      $this->_set[$field] = $value;
       return $this->_data[$field] = $value;
     }
 
@@ -215,37 +226,30 @@ class MongoEntity {
    * @return
    */
   function __unset($field){
-    unset($this->_data[$field]);
     $this->_unset[$field] = 1;
+    unset($this->_data[$field]);
   }
 
   /**
-   *
-   * @param object $query [optional]
-   * @param object $fields [optional]
-   * @param object $sort [optional]
-   * @param object $limit [optional]
-   * @param object $skip [optional]
+   * Loads a single entry based on the given ID field.
+   * If no ID is given then the first entry loaded.
+   * @param object $id [optional] -> ID of the document to find
+   * @param array $fields [optional] -> fields to return. Format is an array of "field" => 1 for inclusions, "field" => -1 for exclusions.
    * @return Success of the load
    */
-  public function load_single($query = array(), $fields = array()){
+  public function load_single($id = null, $fields = array()){
 
     try{
       $collection = $this->loadCollection();
       if($collection){
-        $query_result = $collection->find($query)->timeout(250);
+        $query = array();
+        if($id != null) { $query['_id'] = $id; }
+        $query_result = $collection->find($query, $fields)->timeout($this->_mongo_query_timeout);
 
         if($query_result->hasNext()){
-          // If we leave _id in the results mongo becomes confused by future save attempts. It thinks we're trying to change the id.
-          // If the ID becomes needed (for some reason), this will need to be changed.
           $result = $query_result->getNext();
 
-          if(isset($result[_id])) {
-            $this->_id = $result[_id];
-            unset($result[_id]);
-          }
-
-          $this->_data = $result;
+          $this->_set_data($result);
 
           return TRUE;
         }
@@ -262,22 +266,43 @@ class MongoEntity {
 
   }
 
+  /**
+   * Save the current entry, based on the edits performed.
+   * The data will attempt to save
+   * @param object $id [optional] -> ID of the document to find
+   * @param array $fields [optional] -> fields to return. Format is an array of "field" => 1 for inclusions, "field" => -1 for exclusions.
+   * @return Success of the load
+   */
   public function save($safe = false, $upsert = true, $reload = false){
     $collection = $this->loadCollection();
     
     if($collection){
+      $id_query = array();
+      if(isset($this->_id)){ $id_query['_id'] = $this->_id; }
+      else { $id_query['_id'] = new MongoId(); }
+
       $update_commands = array();
-      if(count($this->_data) > 0){ $update_commands['$set'] = $this->_data; }
+      if(count($this->_set) > 0){ $update_commands['$set'] = $this->_set; }
       if(count($this->_unset) > 0){ $update_commands['$unset'] = $this->_unset; }
+      if(count($this->_increment) > 0) { $update_commands['$inc'] = $this->_increment; }
 
       return $collection->update(
-        array("_id" => new MongoId($this->_data['_id'])),
+        $id_query,
         $update_commands, 
-        array("upsert" => $upsert, "multiple" => $multiple, "safe" => $safe));
+        array("upsert" => $upsert, "safe" => $safe)
+      );
     }
 
     return FALSE;
 
+  }
+
+  /**
+   * Increment
+  public function increment($field, $amount = 1){
+    $this->$field = $this->$field + $amount;
+    unset($this->_set[$field]);  // These two concepts are incompatible.
+    $this->_increment[$field] = $amount;
   }
 
 }
