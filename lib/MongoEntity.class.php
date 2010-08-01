@@ -1,4 +1,10 @@
 <?
+
+// TODO
+// Add 'fsync' options on save/delete
+// Test support for arrays and hashtables (i.e.: do they keep ordering, they go in and out correctly, any reference issues?)
+// Add & test more actions "addToSet", "push[All]", "pull[All]"
+
 class MongoEntity {
 
   const MONGO_SERVER = 'localhost';
@@ -93,8 +99,14 @@ class MongoEntity {
       /* Add logging */
     }
     return FALSE;
-  } // function loadCollection($collectionName,$serverName,$portNumber
-    //                        ,$databaseName = null)
+  }
+
+  private function _remap_field($field){
+    if(isset($this->_field_map[$field])){
+      $field = $this->_field_map[$field];
+    }
+    return $field;
+  }
 
   /**
    * Override for undefined "getters"
@@ -103,18 +115,12 @@ class MongoEntity {
    */
   function __get($field){
 
-    if($field == 'id'){
+    if(strtolower($field) == 'id'){
       return $this->_id;
     }
+
+    $field = $this->_remap_field($field);
     
-    if(isset($this->_field_map[$field])){
-      $field = $this->_field_map[$field];
-    }
-
-    if(strpos($field, '.') !== FALSE){
-      return $this->_getSubArray($field, $this->_data);
-    }
-
     if(isset($this->_data[$field])){
       if(is_array($this->_data[$field])){
         $this->_data[$field] = new ArrayObject($this->_data[$field]);
@@ -124,42 +130,7 @@ class MongoEntity {
     else{
       return null;
     }
-  }
 
-  /**
-   * Used to recursively load parameters requested via "dot notation".
-   * These are basically nested arrays within the data.
-   *
-   * @param object $field
-   * @param object $data
-   * @return
-   */
-  function _getSubArray($field, &$data){
-
-    $i = strpos($field, '.');
-
-    if($i !== FALSE){
-      $f = substr($field, 0, $i);
-
-      if(isset($data[$f])){
-        return $this->_getSubArray(substr($field, $i+1), $data[$f]);
-      }
-      else{
-        return null;
-      }
-
-    }
-    else{
-      if(isset($this->_data[$field])){
-        if(is_array($this->_data[$field])){
-          $this->_data[$field] = new ArrayObject($this->_data[$field]);
-        }
-        return $this->_data[$field];
-      }
-      else{
-        return null;
-      }
-    }
   }
 
   /**
@@ -169,46 +140,15 @@ class MongoEntity {
    * @return
    */
   function __set($field, $value){
-    
-    if(isset($this->_field_map[$field])){
-      $field = $this->_field_map[$field];
+ 
+    if(strtolower($field) == 'id') {
+      return $this->_id = $value;
     }
-
-    if(strpos($field,'.') !== FALSE){
-      return $this->_setSubArray($field, $value, $data);
-    }
-    else{
-      $this->_set[$field] = $value;
-      return $this->_data[$field] = $value;
-    }
-
-  }
-
-  /**
-   * Support for the "dot-notation" when setting.
-   * @param object $field
-   * @param object $value
-   * @param object $data
-   * @return
-   */
-  function _setSubArray($field, $value, &$data){
-
-    $i = strpos($field, '.');
-
-    if($i !== FALSE){
-      $f = substr($field, 0, $i);
-
-      if(!isset($data[$f])){
-        $data[$f] = array();
-      }
-      return $this->_setSubArray($f, $value, $data[$f]);
-    }
-    else{
-
-      return $data[$f] = $value;
-
-    }
-
+   
+    $field = $this->_remap_field($field);
+    $this->_set[$field] = $value;
+    return $this->_data[$field] = $value;
+ 
   }
 
   /**
@@ -217,7 +157,9 @@ class MongoEntity {
    * @return
    */
   function __isset($field){
+
     return isset($this->_data[$field]);
+
   }
 
   /**
@@ -226,15 +168,17 @@ class MongoEntity {
    * @return
    */
   function __unset($field){
+
     $this->_unset[$field] = 1;
     unset($this->_data[$field]);
+
   }
 
   /**
    * Loads a single entry based on the given ID field.
    * If no ID is given then the first entry loaded.
    * @param object $id [optional] -> ID of the document to find
-   * @param array $fields [optional] -> fields to return. Format is an array of "field" => 1 for inclusions, "field" => -1 for exclusions.
+   * @param array $fields [optional] -> fields to return
    * @return Success of the load
    */
   public function load_single($id = null, $fields = array()){
@@ -243,8 +187,12 @@ class MongoEntity {
       $collection = $this->loadCollection();
       if($collection){
         $query = array();
+        $mapped_fields = array();
+
+        foreach($fields as $f) { $mapped_fields[] = $this->_remap_field($f); }
+
         if($id != null) { $query['_id'] = $id; }
-        $query_result = $collection->find($query, $fields)->timeout($this->_mongo_query_timeout);
+        $query_result = $collection->find($query, $mapped_fields)->timeout($this->_mongo_query_timeout);
 
         if($query_result->hasNext()){
           $result = $query_result->getNext();
@@ -261,7 +209,6 @@ class MongoEntity {
     catch(Exception $e){
       // Log exception?
     }
-
     return FALSE;
 
   }
@@ -269,36 +216,77 @@ class MongoEntity {
   /**
    * Save the current entry, based on the edits performed.
    * The data will attempt to save
-   * @param object $id [optional] -> ID of the document to find
-   * @param array $fields [optional] -> fields to return. Format is an array of "field" => 1 for inclusions, "field" => -1 for exclusions.
-   * @return Success of the load
+   * @param boolean safe [optional] -> indicates that we should wait for a server response, default of false
+   * @param boolean upsert [optional] -> indicates that this object can be created if it does not already exist, default true.
+   * @return Success of the save (based on assumptions)
    */
-  public function save($safe = false, $upsert = true, $reload = false){
+  public function save($safe = false, $upsert = true){
     $collection = $this->loadCollection();
     
     if($collection){
-      $id_query = array();
-      if(isset($this->_id)){ $id_query['_id'] = $this->_id; }
-      else { $id_query['_id'] = new MongoId(); }
+      
+      if(isset($this->_id)){ 
+        $id_query = array();
+        $id_query['_id'] = $this->_id; 
+        
+        $update_commands = array();
+        if(count($this->_set) > 0){ $update_commands['$set'] = $this->_set; }
+        if(count($this->_unset) > 0){ $update_commands['$unset'] = $this->_unset; }
+        if(count($this->_increment) > 0) { $update_commands['$inc'] = $this->_increment; }
 
-      $update_commands = array();
-      if(count($this->_set) > 0){ $update_commands['$set'] = $this->_set; }
-      if(count($this->_unset) > 0){ $update_commands['$unset'] = $this->_unset; }
-      if(count($this->_increment) > 0) { $update_commands['$inc'] = $this->_increment; }
+        $update_flags = array("upsert" => $upsert, "safe" => $safe);
 
-      return $collection->update(
-        $id_query,
-        $update_commands, 
-        array("upsert" => $upsert, "safe" => $safe)
-      );
+        try{
+          $res = $collection->update($id_query, $update_commands, $update_flags);
+          return $res;
+        }
+        catch(MongoCursorException $e) {
+          return false;
+        }
+        catch(MongoCursorTimeoutException $e){
+          return false;
+        }
+      }
+      else { 
+        try{
+          $res = $collection->insert($this->_data, array('safe' => $safe));
+          $success = !$safe ? ($res) : (isset($res['ok']) && $res['ok'] == true);
+          if($success) { 
+            $this->_id = $this->_data['_id']; 
+            unset($this->_data['_id']);
+          }
+          return $success;
+        }
+        catch(MongoCursorException $e) {
+          return false;
+        }
+        catch(MongoCursorTimeoutException $e){
+          return false;
+        }
+      }
     }
 
     return FALSE;
 
   }
 
+  public function delete($safe = false){
+     $args = array('justOne' => true, 'safe' => $safe);
+     $collection = $this->loadCollection();
+
+     if($collection && isset($this->_id)){
+       $res = $collection->remove(array('_id' => $this->_id), $args);
+       return (!$safe) ? $res : (isset($res['ok']) && $res['ok'] == 1);
+     }
+
+     return false;
+
+  }
+
   /**
    * Increment
+   *
+  */
   public function increment($field, $amount = 1){
     $this->$field = $this->$field + $amount;
     unset($this->_set[$field]);  // These two concepts are incompatible.
