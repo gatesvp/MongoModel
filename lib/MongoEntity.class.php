@@ -237,7 +237,6 @@ class MongoEntity {
           foreach($this->_push as $field => $value) {
             $update_commands['$push'][$field] = $value;
           }
-print_r($update_commands);
         }
 
         $update_flags = array("upsert" => $upsert, "safe" => $safe);
