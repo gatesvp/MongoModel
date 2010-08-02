@@ -206,5 +206,56 @@ class TestMongoEntityBasic extends UnitTestCase{
 
   }
 
+  function testFieldUnsettingNew(){
+    $data = new MongoEntity(array('a' => 1, 'b' => 2));
+    unset($data->a);
+    $data->save();
+
+    $loaded = new MongoEntity();
+    $loaded->load_single();
+
+    return ($this->assertNull($data->a) && 
+            $this->assertNull($loaded->a) && 
+            $this->assertNotNull($data->b) && 
+            $this->assertNotNull($loaded->b) );
+  }
+
+  function testFieldUnsettingExisting(){
+
+    $data = new MongoEntity(array('a' => 1, 'b' => 2));
+    $data->save();
+
+    $loaded = new MongoEntity();
+    $loaded->load_single();
+    unset($loaded->a);
+    $loaded->save(true);
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+    
+    return ($this->assertNull($loaded->a) && 
+            $this->assertNull($reloaded->a) && 
+            $this->assertNotNull($loaded->b) && 
+            $this->assertNotNull($reloaded->b) );
+
+  }
+
+  function testBlankSave(){
+
+    $data = new MongoEntity(array('a' => 1, 'b' => 2));
+    $data->save();
+
+    $loaded = new MongoEntity();
+    $loaded->load_single();
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertEqual($loaded->a, $reloaded->a) &&
+            $this->assertEqual($loaded->b, $reloaded->b) );
+
+  }
+
 }
 ?>

@@ -28,6 +28,7 @@ class MongoEntity {
   protected $_unset = array();
   protected $_set = array();
   protected $_increment = array();
+  protected $_push = array();
   protected $_addToSet = array();
   
   protected $_field_map = array();            # map of "incoming" names to "underlying" names
@@ -115,16 +116,13 @@ class MongoEntity {
    */
   function __get($field){
 
+    $field = $this->_remap_field($field);
+    
     if(strtolower($field) == 'id'){
       return $this->_id;
     }
 
-    $field = $this->_remap_field($field);
-    
     if(isset($this->_data[$field])){
-      if(is_array($this->_data[$field])){
-        $this->_data[$field] = new ArrayObject($this->_data[$field]);
-      }
       return $this->_data[$field];
     }
     else{
@@ -140,12 +138,13 @@ class MongoEntity {
    * @return
    */
   function __set($field, $value){
+
+    $field = $this->_remap_field($field);
  
     if(strtolower($field) == 'id') {
       return $this->_id = $value;
-    }
-   
-    $field = $this->_remap_field($field);
+    } 
+
     $this->_set[$field] = $value;
     return $this->_data[$field] = $value;
  
@@ -233,12 +232,24 @@ class MongoEntity {
         if(count($this->_set) > 0){ $update_commands['$set'] = $this->_set; }
         if(count($this->_unset) > 0){ $update_commands['$unset'] = $this->_unset; }
         if(count($this->_increment) > 0) { $update_commands['$inc'] = $this->_increment; }
+        if(count($this->_push) > 0) {
+          $update_commands['$push'] = array();
+          foreach($this->_push as $field => $value) {
+            $update_commands['$push'][$field] = $value;
+          }
+print_r($update_commands);
+        }
 
         $update_flags = array("upsert" => $upsert, "safe" => $safe);
 
         try{
-          $res = $collection->update($id_query, $update_commands, $update_flags);
-          return $res;
+          if(count($update_commands) > 0){
+            $res = $collection->update($id_query, $update_commands, $update_flags);
+            return $res;
+          }
+          else { 
+            return true;
+          }
         }
         catch(MongoCursorException $e) {
           return false;
@@ -288,9 +299,29 @@ class MongoEntity {
    *
   */
   public function increment($field, $amount = 1){
-    $this->$field = $this->$field + $amount;
-    unset($this->_set[$field]);  // These two concepts are incompatible.
+
+    $field = $this->_remap_field($field);
+
+    $this->_data[$field] += $amount;
     $this->_increment[$field] = $amount;
+
+  }
+
+  public function push($field, $value){
+
+    $field = $this->_remap_field($field);
+
+    if(is_array($this->_data[$field])){
+      array_push($this->_data[$field], $value);
+      $this->_push[$field] = $value;
+    }
+    else if(issset($this->_data[$field])){
+      $this->$field = array($this->$field, $value);
+    }
+    else {
+      $this->$field = array($value);
+    }
+
   }
 
 }
