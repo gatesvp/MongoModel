@@ -29,6 +29,7 @@ class MongoEntity {
   protected $_set = array();
   protected $_increment = array();
   protected $_push = array();
+  protected $_pop = array();
   protected $_addToSet = array();
   
   protected $_field_map = array();            # map of "incoming" names to "underlying" names
@@ -314,7 +315,7 @@ class MongoEntity {
       array_push($this->_data[$field], $value);
       $this->_push[$field] = $value;
     }
-    else if(issset($this->_data[$field])){
+    else if(isset($this->_data[$field])){
       $this->$field = array($this->$field, $value);
     }
     else {
