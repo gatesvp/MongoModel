@@ -26,6 +26,17 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   }
 
+  private function _init_array_and_load(){
+
+    $this->_init_array();
+
+    $loaded = new MongoEntity();
+    $loaded->load_single();
+
+    return $loaded;
+
+  }
+
   private function _init_hash(){
 
     $data_set = array('a' => 1, 'b' => 2, 'c' => array(0 => 'x', 5 => 'y', 10 => 'z'));
@@ -34,12 +45,19 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   }
 
-  function testBasicArray(){
+  private function _init_hash_and_load(){
 
-    $this->_init_array();
+    $this->_init_hash();
 
     $loaded = new MongoEntity();
     $loaded->load_single();
+    return $loaded;
+
+  }
+
+  function testBasicArray(){
+
+    $loaded = $this->_init_array_and_load();
 
     return ($this->assertTrue(is_array($loaded->c)) &&
             $this->assertTrue($loaded->c[0] == 'x') &&
@@ -63,10 +81,7 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   function testBasicArrayChange(){
 
-    $this->_init_array();
-
-    $loaded = new MongoEntity();
-    $loaded->load_single();
+    $loaded = $this->_init_array_and_load();
     $loaded->c = array('x', 'y', 'z', 'w');
     $loaded->save();
 
@@ -83,10 +98,7 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   function testHashArrayChanged(){
 
-    $this->_init_hash();
-
-    $loaded = new MongoEntity();
-    $loaded->load_single();
+    $loaded = $this->_init_hash_and_load();
     $loaded->c = array(0 => 'x', 5 => 'y', 10 => 'z', 15 => 'w');
     $loaded->save();
 
@@ -102,10 +114,8 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   function testArrayPush(){
 
-    $this->_init_array();
+    $loaded = $this->_init_array_and_load();
 
-    $loaded = new MongoEntity();
-    $loaded->load_single();
     $loaded->push('c', 'w');
     $loaded->save();
 
@@ -120,12 +130,9 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   }
 
-  function testArrayMultiPush(){
+  function testArrayMultiPushSingleField(){
 
-    $this->_init_array();
-
-    $loaded = new MongoEntity();
-    $loaded->load_single();
+    $loaded = $this->_init_array_and_load();
     $loaded->push('c', 'a');
     $loaded->push('c', 'w');
     $loaded->save();  // push should only push one of these
@@ -143,12 +150,9 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   function testArrayPushExistingField(){
 
-    $this->_init_array();
-
-    $loaded = new MongoEntity();
-    $loaded->load_single();
+    $loaded = $this->_init_array_and_load();
     $loaded->push('b', 10);
-    $loaded->save();  // push should only push one of these
+    $loaded->save();
 
     $reloaded = new MongoEntity();
     $reloaded->load_single();
@@ -159,12 +163,9 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   }
 
-  function testArrayPushBlankField(){
+  function testArrayPushEmptyField(){
 
-    $this->_init_array();
-
-    $loaded = new MongoEntity();
-    $loaded->load_single();
+    $loaded = $this->_init_array_and_load();
     $loaded->push('x', 10);
     $loaded->save();  // push should only push one of these
 
@@ -175,6 +176,97 @@ class TestMongoEntityArrays extends UnitTestCase{
             $this->assertTrue($reloaded->x[0] == 10) );
 
   }
+
+  function testArrayPushMultiple(){
+
+    $loaded = $this->_init_array_and_load();
+    $loaded->push('c', 'w');
+    $loaded->push('x', 5);
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue(is_array($reloaded->x)) &&
+            $this->assertEqual($reloaded->c[3], 'w') &&
+            $this->assertEqual($reloaded->x[0], 5) );
+
+  }
+
+  function testArrayPopEnd(){
+
+    $loaded = $this->_init_array_and_load();
+
+    $loaded->pop('c', true);
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertEqual(count($loaded->c), 2) &&
+            $this->assertEqual($loaded->c[0], 'x') &&
+            $this->assertEqual($loaded->c[1], 'y') &&
+            $this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertEqual(count($reloaded->c), 2) &&
+            $this->assertEqual($reloaded->c[0], 'x') &&
+            $this->assertEqual($reloaded->c[1], 'y') );
+
+  }
+
+  function testArrayPopFront(){
+
+    $loaded = $this->_init_array_and_load();
+
+    $loaded->pop('c', false);
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertEqual(count($loaded->c), 2) &&
+            $this->assertEqual($loaded->c[0], 'y') &&
+            $this->assertEqual($loaded->c[1], 'z') &&
+            $this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertEqual(count($reloaded->c), 2) &&
+            $this->assertEqual($reloaded->c[0], 'y') &&
+            $this->assertEqual($reloaded->c[1], 'z') );
+
+  }
+
+  function testArrayPopFail(){
+
+    $loaded = $this->_init_array_and_load();
+
+    $loaded->pop('a');
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertEqual($reloaded->a, 1) );
+
+  }
+
+  function testArrayPushAll(){
+
+    $loaded = $this->_init_array_and_load();
+    $loaded->pushAll('c', array(10,11,12));
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue($reloaded->c[0] == 'x') &&
+            $this->assertTrue($reloaded->c[3] == 10) && 
+            $this->assertTrue($reloaded->c[4] == 11) &&
+            $this->assertTrue($reloaded->c[5] == 12) );
+
+  }
+
 
 }
 ?>

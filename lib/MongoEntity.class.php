@@ -1,4 +1,4 @@
-<?
+s<?
 
 // TODO
 // Add 'fsync' options on save/delete
@@ -31,6 +31,7 @@ class MongoEntity {
   protected $_push = array();
   protected $_pop = array();
   protected $_addToSet = array();
+  protected $_pushAll = array();
   
   protected $_field_map = array();            # map of "incoming" names to "underlying" names
   
@@ -239,6 +240,17 @@ class MongoEntity {
             $update_commands['$push'][$field] = $value;
           }
         }
+        if(count($this->_pop) > 0) {
+          $update_commands['$pop'] = array();
+          foreach($this->_pop as $field => $value) {
+            $update_commands['$pop'][$field] = $value;
+          }
+        }
+        if(count($this->_pushAll) > 0) {
+          foreach($this->_pushAll as $field => $value) {
+            $update_commands['$pushAll'][$field] = $value;
+           }
+        }
 
         $update_flags = array("upsert" => $upsert, "safe" => $safe);
 
@@ -324,4 +336,37 @@ class MongoEntity {
 
   }
 
+  public function pop($field, $back = true){
+
+    $field = $this->_remap_field($field);
+
+    if(is_array($this->_data[$field])){
+      if($back){
+        array_pop($this->_data[$field]);
+        $this->_pop[$field] = 1;
+      }
+      else {
+        array_shift($this->_data[$field]);
+        $this->_pop[$field] = -1;
+      }
+    }
+
+  }
+
+  public function pushAll($field, $values = array()){
+
+    $field = $this->_remap_field($field);
+
+    if(is_array($this->_data[$field])){
+      array_splice($this->_data[$field], count($this->_data[$field]), 0, $values);
+      $this->_pushAll[$field] = $values;
+    }
+    else if(isset($this->_data[$field])){
+      $this->$field = array($this->$field, $values);
+    }
+    else {
+      $this->$field = array($value);
+    }
+
+  }
 }
