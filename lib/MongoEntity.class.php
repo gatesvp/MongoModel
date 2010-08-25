@@ -32,7 +32,9 @@ class MongoEntity {
   protected $_pop = array();
   protected $_addToSet = array();
   protected $_pushAll = array();
-  
+  protected $_pull = array();
+  protected $_pullAll = array();  
+
   protected $_field_map = array();            # map of "incoming" names to "underlying" names
   
   function __construct($data = array()){
@@ -251,6 +253,16 @@ class MongoEntity {
             $update_commands['$pushAll'][$field] = $value;
            }
         }
+        if(count($this->_pull) > 0) {
+          foreach($this->_pull as $field => $value) {
+            $update_commands['$pull'][$field] = $value;
+           }
+        }
+        if(count($this->_pullAll) > 0) {
+          foreach($this->_pullAll as $field => $value) {
+            $update_commands['$pullAll'][$field] = $value;
+           }
+        }
 
         $update_flags = array("upsert" => $upsert, "safe" => $safe);
 
@@ -372,6 +384,52 @@ class MongoEntity {
     }
     else {
       $this->$field = array($value);
+    }
+
+  }
+
+  public function pull($field, $value){
+
+    $field = $this->_remap_field($field);
+
+    if(is_array($this->_data[$field])){
+
+      /* Basic logic here is to make a copy of the array and remove all matches.
+         We're then using array_values to "re-zero" the indexes and re-assign the _data value */
+      $current_array = $this->_data[$field];
+      $current_size = count($current_array);
+
+      for($i = 0; $i < $current_size; $i++){ 
+        if($current_array[$i] == $value){ 
+          unset($current_array[$i]); 
+        }
+      }
+
+      $this->_data[$field] = array_values($current_array);
+
+      /* If we attempt a second pull, then we're technically doing a "pullAll"
+         So we append the existing data and new data to "pullAll", then we unset "pull".
+      */
+      if(isset($this->_pull[$field])){
+        if(is_array($this->_pullAll[$field])){
+          $this->_pullAll[$field] = array_merge($this->_pullAll[$field], array($this->_pull[$field], $value));
+        }
+        else{
+          $this->_pullAll[$field] = array($this->_pull[$field], $value);
+        }
+        unset($this->_pull[$field]);
+      }
+      else{
+        $this->_pull[$field] = $value;
+      }
+    }
+
+  }
+
+  public function pullAll($field, $values = array()){
+
+    foreach($values as $v){
+      $this->pull($field, $v);
     }
 
   }

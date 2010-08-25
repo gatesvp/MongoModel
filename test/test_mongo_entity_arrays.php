@@ -287,5 +287,100 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   }
 
+  function testArrayPullBasic(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->pull('c', 'x');
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue(count($loaded->c) == 2) &&
+            $this->assertTrue(count($reloaded->c) == 2) &&
+            $this->assertTrue(array_diff($loaded->c, $reloaded->c) == array()) );
+
+  }
+
+  function testArrayPullAdvanced(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->push('c', 'x');
+    $loaded->save();
+
+    $loaded = new MongoEntity;
+    $loaded->load_single();
+    $loaded->pull('c', 'x');
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue(count($loaded->c) == 2) &&
+            $this->assertTrue(count($reloaded->c) == 2) &&
+            $this->assertTrue(array_diff($loaded->c, $reloaded->c) == array()) );
+
+  }
+
+  function testArrayPullMulti(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->pull('c', 'x');
+    $loaded->pull('c', 'z');
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue(count($loaded->c) == 1) &&
+            $this->assertTrue(count($reloaded->c) == 1) &&
+            $this->assertTrue($reloaded->c[0] == 'y') &&
+            $this->assertTrue(array_diff($loaded->c, $reloaded->c) == array()) );
+
+  }
+
+  function testArrayPullAllBasic(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->pullAll('c', array('x', 'z'));
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue(count($loaded->c) == 1) &&
+            $this->assertTrue(count($reloaded->c) == 1) &&
+            $this->assertTrue($reloaded->c[0] == 'y') &&
+            $this->assertTrue(array_diff($loaded->c, $reloaded->c) == array()) );
+
+  }
+
+  function testArrayPullAllMulti(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->pushAll('c', array('w', 'q'));
+    $loaded->save();
+
+    $loaded = new MongoEntity;
+    $loaded->load_single();
+    $loaded->pullAll('c', array('x', 'z'));
+    $loaded->pullAll('c', array('w', 'q'));
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue(count($loaded->c) == 1) &&
+            $this->assertTrue(count($reloaded->c) == 1) &&
+            $this->assertTrue($reloaded->c[0] == 'y') &&
+            $this->assertTrue(array_diff($loaded->c, $reloaded->c) == array()) );
+
+  }
+
 }
 ?>
