@@ -1,4 +1,4 @@
-s<?
+<?
 
 // TODO
 // Add 'fsync' options on save/delete
@@ -359,7 +359,13 @@ class MongoEntity {
 
     if(is_array($this->_data[$field])){
       array_splice($this->_data[$field], count($this->_data[$field]), 0, $values);
-      $this->_pushAll[$field] = $values;
+
+      if(is_array($this->_pushAll[$field])){
+        $this->_pushAll[$field] = array_merge($this->_pushAll[$field], $values);
+      }
+      else{
+        $this->_pushAll[$field] = $values;
+      }
     }
     else if(isset($this->_data[$field])){
       $this->$field = array($this->$field, $values);

@@ -267,6 +267,25 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   }
 
+  function testArrayPushAllMulti(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->pushAll('c', array(10,11,12));
+    $loaded->pushAll('c', array(6, 7, 8));
+    $loaded->save();
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue($reloaded->c[0] == 'x') &&
+            $this->assertTrue($reloaded->c[3] == 10) && 
+            $this->assertTrue($reloaded->c[4] == 11) &&
+            $this->assertTrue($reloaded->c[5] == 12) &&
+            $this->assertTrue($reloaded->c[6] == 6) &&
+            $this->assertTrue($reloaded->c[7] == 7) &&
+            $this->assertTrue($reloaded->c[8] == 8) );
+
+  }
 
 }
 ?>
