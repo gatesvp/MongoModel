@@ -263,6 +263,13 @@ class MongoEntity {
             $update_commands['$pullAll'][$field] = $value;
            }
         }
+        if(count($this->_addToSet) > 0) {
+          foreach($this->_addToSet as $field => $value) {
+            foreach($value as $v){
+              $update_commands['$addToSet'][$field]['$each'][] = $v;
+            }
+          }
+        }
 
         $update_flags = array("upsert" => $upsert, "safe" => $safe);
 
@@ -430,6 +437,48 @@ class MongoEntity {
 
     foreach($values as $v){
       $this->pull($field, $v);
+    }
+
+  }
+
+  public function addToSet($field, $values = array()){
+
+    $field = $this->_remap_field($field);
+
+    if(is_array($values)){
+
+      foreach($values as $v){
+        $this->_addToSet[$field][] = $v;
+        
+        $found = false;
+        foreach($this->_data[$field] as $f){
+          if($v == $f){
+            $found = true;
+            continue;
+          }
+        }
+
+        if(!$found){
+          $this->_data[$field][] = $v;
+        }
+      }
+
+    }
+    else {
+
+      $this->_addToSet[$field][] = $values;
+
+      $found = false;
+      foreach($this->_data[$field] as $f){
+        if($values == $f){
+          $found = true;
+          continue;
+        }
+      }
+
+      if(!$found){
+        $this->_data[$field][] = $values;
+      }
     }
 
   }
