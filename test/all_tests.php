@@ -1,6 +1,8 @@
 <?php
 
 require_once('simpletest/autorun.php');
+require_once('../lib/MongoEntity.class.php');
+require_once('MongoTestCase.class.php');
 
 class AllTests extends TestSuite{
   function AllTests(){

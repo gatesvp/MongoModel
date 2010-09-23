@@ -1,32 +1,21 @@
 <?php
 
-require_once('../lib/MongoEntity.class.php');
+class TestMongoEntityIncrement extends MongoTestCase{
 
-class TestMongoEntityIncrement extends UnitTestCase{
+  private function _init_entry(){
+    $data_set = array('a' => 1, 'b' => 2);
+    $data = new MongoEntity($data_set);
+    $data->save(true);
 
-  function setUp(){
-
-    $mongo = new Mongo();   
-    $mongo->selectDB('test')->selectCollection('test')->drop();
-
-  }
-
-  function teardown(){
-
-    $mongo = new Mongo();
-    $mongo->selectDB('test')->selectCollection('test')->drop();
-
+    return $data;
   }
 
   function testIncrementOnLoaded(){
-    $data_set = array('a' => 1, 'b' => 2);
-    $data = new MongoEntity($data_set);
-    $data->save();
 
+    $data = $this->_init_entry();
     $data->increment('a', 5);
-    $data->save();
 
-    if($this->assertEqual($data->a, 6)){
+    if($data->save(true) && $this->assertEqual($data->a, 6)){
 
       $loaded = new MongoEntity();
       $loaded->load_single();
@@ -41,19 +30,17 @@ class TestMongoEntityIncrement extends UnitTestCase{
 
   function testIncrementOnUnloaded(){
 
-    $data_set = array('a' => 1, 'b' => 2);
-    $data = new MongoEntity($data_set);
-    $data->save();
+    $data = $this->_init_entry();
 
     $id = $data->id;
 
     $fire_and_forget = new MongoEntity();
     $fire_and_forget->id = $id;
     $fire_and_forget->increment('a', 5);
-    $fire_and_forget->save();
+    $fire_and_forget->save(true);  // Not truly "fire & forget" b/c of "safe".
 
     $loaded = new MongoEntity();
-    $loaded->load_single();
+    $loaded->load_single($id);
     
     return $this->assertEqual($loaded->a, 6);
 

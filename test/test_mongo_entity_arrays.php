@@ -1,28 +1,12 @@
 <?php
 
-require_once('../lib/MongoEntity.class.php');
-
-class TestMongoEntityArrays extends UnitTestCase{
-
-  function setUp(){
-
-    $mongo = new Mongo();   
-    $mongo->selectDB('test')->selectCollection('test')->drop();
-
-  }
-
-  function teardown(){
-
-    $mongo = new Mongo();
-    $mongo->selectDB('test')->selectCollection('test')->drop();
-
-  }
+class TestMongoEntityArrays extends MongoTestCase{
 
   private function _init_array(){
 
     $data_set = array('a' => 1, 'b' => 2, 'c' => array('x','y','z'));
     $data = new MongoEntity($data_set);
-    $data->save();
+    $data->save(true);
 
   }
 
@@ -41,7 +25,7 @@ class TestMongoEntityArrays extends UnitTestCase{
 
     $data_set = array('a' => 1, 'b' => 2, 'c' => array(0 => 'x', 5 => 'y', 10 => 'z'));
     $data = new MongoEntity($data_set);
-    $data->save();
+    $data->save(true);
 
   }
 
@@ -68,10 +52,7 @@ class TestMongoEntityArrays extends UnitTestCase{
 
   function testHashArray(){
 
-    $this->_init_hash();
-
-    $loaded = new MongoEntity();
-    $loaded->load_single();
+    $loadded = $this->_init_hash_and_load();
 
     return ($this->assertTrue(is_array($loaded->c)) &&
             $this->assertTrue($loaded->c[0] == 'x') &&

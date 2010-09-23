@@ -1,22 +1,6 @@
 <?php
 
-require_once('../lib/MongoEntity.class.php');
-
-class TestMongoEntityBasic extends UnitTestCase{
-
-  function setUp(){
-
-    $mongo = new Mongo();   
-    $mongo->selectDB('test')->selectCollection('test')->drop();
-
-  }
-
-  function teardown(){
-
-    $mongo = new Mongo();
-    $mongo->selectDB('test')->selectCollection('test')->drop();
-
-  }
+class TestMongoEntityBasic extends MongoTestCase{
 
   function testCreateBasic(){
     $data = new MongoEntity();
@@ -25,41 +9,58 @@ class TestMongoEntityBasic extends UnitTestCase{
     $data->b = 2;
 
     return ($this->assertTrue($data->save()) &&
+      $this->assertEqual($data->a, 1) &&
+      $this->assertEqual($data->b, 2) &&
       $this->assertNotNull($data->id) );
   }
 
   function testCreateFromConstructor(){
     $data_set = array('a' => 1, 'b' => 2);
     $data = new MongoEntity($data_set);
+
     return ($this->assertTrue($data->save()) &&
+      $this->assertEqual($data->a, 1) &&
+      $this->assertEqual($data->b, 2) &&
       $this->assertNotNull($data->id) );
   }
 
   function testCreateSafeUpsert(){
     $data_set = array('a' => 1, 'b' => 2);
     $data = new MongoEntity($data_set);
+
     return ($this->assertTrue($data->save(true, true)) &&
+      $this->assertEqual($data->a, 1) &&
+      $this->assertEqual($data->b, 2) &&
       $this->assertNotNull($data->id) );
   }
 
   function testCreateUnsafeUpsert(){
     $data_set = array('a' => 1, 'b' => 2);
     $data = new MongoEntity($data_set);
+
     return ($this->assertTrue($data->save(false, true)) &&
+      $this->assertEqual($data->a, 1) &&
+      $this->assertEqual($data->b, 2) &&
       $this->assertNotNull($data->id) );
   }
 
   function testCreateSafe(){
     $data_set = array('a' => 1, 'b' => 2);
     $data = new MongoEntity($data_set);
+
     return ($this->assertTrue($data->save(false, false)) &&
+      $this->assertEqual($data->a, 1) &&
+      $this->assertEqual($data->b, 2) &&
       $this->assertNotNull($data->id) );
   }
 
   function testCreateUnsafe(){
     $data_set = array('a' => 1, 'b' => 2);
     $data = new MongoEntity($data_set);
+
     return ($this->assertTrue($data->save(true, false)) &&
+      $this->assertEqual($data->a, 1) &&
+      $this->assertEqual($data->b, 2) &&
       $this->assertNotNull($data->id) );
   }
 
@@ -70,7 +71,10 @@ class TestMongoEntityBasic extends UnitTestCase{
     $data2 = new MongoEntity();
     $data2->load_single();
 
-    return ($this->assertTrue($data2->a == $data->a) && $this->assertTrue($data2->b == $data->b));
+    return ($this->assertEqual($data2->a, $data->a) &&
+      $this->assertEqual($data->a, 1) &&
+      $this->assertEqual($data->b, 2) &&
+      $this->assertEqual($data2->b, $data->b));
   }
 
   function testLoadSpecific(){
@@ -84,7 +88,10 @@ class TestMongoEntityBasic extends UnitTestCase{
     $data3 = new MongoEntity();
     $data3->load_single($id);
 
-    return ($this->assertTrue($data2->a == $data3->a) && $this->assertTrue($data2->b == $data3->b));
+    return ($this->assertEqual($data2->a, 10) &&
+      $this->assertEqual($data2->b, 8) &&
+      $this->assertTrue($data2->a == $data3->a) && 
+      $this->assertTrue($data2->b == $data3->b));
   }
 
   function testLoadSpecificFields(){
@@ -116,7 +123,8 @@ class TestMongoEntityBasic extends UnitTestCase{
 
     return ( $this->assertEqual($id, $id2) &&
              $this->assertNull($data->c) &&
-             $this->assertNotNull($data2->c) );
+             $this->assertNotNull($data2->c) &&
+             $this->assertEqual($data2->c, 10) );
 
   }
 
