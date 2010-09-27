@@ -1,9 +1,6 @@
 <?
-
 // TODO
 // Add 'fsync' options on save/delete
-// Test support for arrays and hashtables (i.e.: do they keep ordering, they go in and out correctly, any reference issues?)
-// Add & test more actions "addToSet", "push[All]", "pull[All]"
 
 class MongoEntity {
 
@@ -79,7 +76,7 @@ class MongoEntity {
     return $mongo;
   }
 
-  protected function loadCollection($collectionName = null,$serverName = null
+  public function loadCollection($collectionName = null,$serverName = null
                                    ,$portNumber = null,$databaseName = null) {
     if (!isset($collectionName)) {
       $collectionName = $this->_mongo_collection;
