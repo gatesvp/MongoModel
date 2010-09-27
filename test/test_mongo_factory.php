@@ -78,5 +78,13 @@ class TestMongoFactory extends MongoTestCase{
 
   }
 
+  public function testFactoryLoadObjectFailure(){
+
+    $data_set = MongoFactory::LoadObjectsByQuery('MongoBlah');
+
+    return $this->assertNull($data_set);
+
+  }
+
 }
 ?>

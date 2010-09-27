@@ -341,14 +341,15 @@ class MongoEntity {
 
     if(is_array($this->_data[$field])){
       array_push($this->_data[$field], $value);
-      $this->_push[$field] = $value;
     }
     else if(isset($this->_data[$field])){
-      $this->$field = array($this->$field, $value);
+      /* invalid case, we can't do anything */
     }
     else {
-      $this->$field = array($value);
+      $this->_data[$field] = array($value);
     }
+
+    $this->_push[$field] = $value;
 
   }
 
@@ -376,18 +377,19 @@ class MongoEntity {
     if(is_array($this->_data[$field])){
       array_splice($this->_data[$field], count($this->_data[$field]), 0, $values);
 
-      if(is_array($this->_pushAll[$field])){
-        $this->_pushAll[$field] = array_merge($this->_pushAll[$field], $values);
-      }
-      else{
-        $this->_pushAll[$field] = $values;
-      }
     }
     else if(isset($this->_data[$field])){
-      $this->$field = array($this->$field, $values);
+      /* invalid case, we can't do anything */
     }
     else {
       $this->$field = array($value);
+    }
+
+    if(is_array($this->_pushAll[$field])){
+      $this->_pushAll[$field] = array_merge($this->_pushAll[$field], $values);
+    }
+    else{
+      $this->_pushAll[$field] = $values;
     }
 
   }

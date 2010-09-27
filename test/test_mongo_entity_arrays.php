@@ -144,9 +144,8 @@ class TestMongoEntityArrays extends MongoTestCase{
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
 
-    return ($this->assertTrue(is_array($reloaded->b)) &&
-            $this->assertEqual($reloaded->b[0], 2) &&
-            $this->assertEqual($reloaded->b[1], 10) );
+    return ($this->assertFalse(is_array($reloaded->b)) &&
+            $this->assertEqual($reloaded->b, 2) );
 
   }
 
