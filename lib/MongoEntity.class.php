@@ -468,10 +468,12 @@ class MongoEntity {
       $this->_addToSet[$field][] = $values;
 
       $found = false;
-      foreach($this->_data[$field] as $f){
-        if($values == $f){
-          $found = true;
-          continue;
+      if($this->_data[$field]){
+        foreach($this->_data[$field] as $f){
+          if($values == $f){
+            $found = true;
+            continue;
+          }
         }
       }
 
