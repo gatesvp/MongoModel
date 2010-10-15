@@ -11,6 +11,7 @@ class AllTests extends TestSuite{
     $this->addFile('test_mongo_entity_basic.php');
     $this->addFile('test_mongo_entity_increment.php');
     $this->addFile('test_mongo_entity_arrays.php');
+    $this->addFile('test_mongo_entity_hash.php');
     $this->addFile('test_mongo_factory.php');
 
   }

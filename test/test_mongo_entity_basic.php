@@ -66,7 +66,7 @@ class TestMongoEntityBasic extends MongoTestCase{
 
   function testLoadBasic(){
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
 
     $data2 = new MongoEntity();
     $data2->load_single();
@@ -79,7 +79,7 @@ class TestMongoEntityBasic extends MongoTestCase{
 
   function testLoadSpecific(){
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
 
     $data2 = new MongoEntity(array('a' => 10, 'b' => 8));
     $data2->save();
@@ -96,7 +96,7 @@ class TestMongoEntityBasic extends MongoTestCase{
 
   function testLoadSpecificFields(){
     $data = new MongoEntity(array('a' => 1, 'b' => 2, 'c' => 3));
-    $data->save();
+    $this->assertTrue($data->save());
     $id = $data->id;
 
     $load = new MongoEntity();
@@ -111,7 +111,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testUpdateOnLoaded(){
 
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
     $id = $data->id;
 
     $data2 = new MongoEntity();
@@ -131,7 +131,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testUpdateOnUnloaded(){
 
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
     $id = $data->id;
 
     $data2 = new MongoEntity();
@@ -151,7 +151,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testDeleteOnLoadedUnsafe(){
 
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
     $id = $data->id;
 
     $loaded = new MongoEntity();
@@ -169,7 +169,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testDeleteOnLoadedSafe(){
 
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
     $id = $data->id;
 
     $loaded = new MongoEntity();
@@ -187,7 +187,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testDeleteOnUnloadedUnsafe(){
 
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
     $id = $data->id;
 
     $loaded = new MongoEntity();
@@ -202,7 +202,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testDeleteOnUnloadedSafe(){
 
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
     $id = $data->id;
 
     $loaded = new MongoEntity();
@@ -217,7 +217,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testFieldUnsettingNew(){
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
     unset($data->a);
-    $data->save();
+    $this->assertTrue($data->save());
 
     $loaded = new MongoEntity();
     $loaded->load_single();
@@ -231,7 +231,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testFieldUnsettingExisting(){
 
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
 
     $loaded = new MongoEntity();
     $loaded->load_single();
@@ -251,7 +251,7 @@ class TestMongoEntityBasic extends MongoTestCase{
   function testBlankSave(){
 
     $data = new MongoEntity(array('a' => 1, 'b' => 2));
-    $data->save();
+    $this->assertTrue($data->save());
 
     $loaded = new MongoEntity();
     $loaded->load_single();

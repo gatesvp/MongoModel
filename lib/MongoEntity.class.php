@@ -1,6 +1,8 @@
 <?
 // TODO
 // Add 'fsync' options on save/delete
+// Add user authentication to connection string
+// Persistent connections & pooling
 
 class MongoEntity {
 
@@ -119,15 +121,48 @@ class MongoEntity {
 
     $field = $this->_remap_field($field);
     
+    // special handling for fields named ID
     if(strtolower($field) == 'id'){
       return $this->_id;
     }
 
+    // special handling for dot-notation fields
+    $i = strpos($field, '.');
+    if($i !== false){
+      return $this->_getSubArray($field, $this->_data);
+    }
+
+    // standar handling for data fields
     if(isset($this->_data[$field])){
       return $this->_data[$field];
     }
     else{
       return null;
+    }
+
+  }
+
+  /**
+   * Recursive handler for sub-arrays/hashtables accessed using the dot notation.
+   */
+  private function _getSubArray($field_name, &$curr_array){
+
+    $i = strpos($field_name, '.');
+
+    if($i !== false){
+      $field = substr($field_name, 0, $i);
+
+      if(!isset($curr_array[$field])){
+        return null;
+      }
+      else{
+        $curr_array =& $curr_array[$field];
+        return $this->_getSubArray(substr($field_name, $i + 1), $curr_array);
+      }
+
+    }
+    else {
+      return isset($curr_array[$field_name]) ? $curr_array[$field_name] : 0;
     }
 
   }
@@ -141,14 +176,46 @@ class MongoEntity {
   function __set($field, $value){
 
     $field = $this->_remap_field($field);
- 
+
+    // special handling for ID fields 
     if(strtolower($field) == 'id') {
       return $this->_id = $value;
     } 
 
+    // special handling for dot-notation fields
+    $i = strpos($field, '.');
+    if($i !== false){
+      $res = $this->_setSubArray($field, $this->_data, $value);
+      $this->_set[$field] = $value;
+    }
+
+    // setting the value also adds to the $set array
     $this->_set[$field] = $value;
     return $this->_data[$field] = $value;
  
+  }
+
+  /**
+   * Recursive handler for sub-arrays/hashtables accessed using the dot notation.
+   */
+  private function _setSubArray($field_name, &$curr_array, $value){
+
+    $i = strpos($field_name, '.');
+
+    if($i !== false){
+      $field = substr($field_name, 0, $i);
+
+      if(!isset($curr_array[$field])){
+        $curr_array[$field] = array();
+      }
+      $curr_array =& $curr_array[$field];
+      return $this->_setSubArray(substr($field_name, $i + 1), $curr_array, $value);
+
+    }
+    else {
+      return $curr_array[$field_name] = $value;
+    }
+
   }
 
   /**

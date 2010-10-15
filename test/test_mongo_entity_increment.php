@@ -5,7 +5,7 @@ class TestMongoEntityIncrement extends MongoTestCase{
   private function _init_entry(){
     $data_set = array('a' => 1, 'b' => 2);
     $data = new MongoEntity($data_set);
-    $data->save(true);
+    $this->assertTrue($data->save(true));
 
     return $data;
   }
@@ -37,7 +37,7 @@ class TestMongoEntityIncrement extends MongoTestCase{
     $fire_and_forget = new MongoEntity();
     $fire_and_forget->id = $id;
     $fire_and_forget->increment('a', 5);
-    $fire_and_forget->save(true);  // Not truly "fire & forget" b/c of "safe".
+    $this->assertTrue($fire_and_forget->save(true));  // Not truly "fire & forget" b/c of "safe".
 
     $loaded = new MongoEntity();
     $loaded->load_single($id);

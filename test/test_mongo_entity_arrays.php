@@ -6,7 +6,7 @@ class TestMongoEntityArrays extends MongoTestCase{
 
     $data_set = array('a' => 1, 'b' => 2, 'c' => array('x','y','z'));
     $data = new MongoEntity($data_set);
-    $data->save(true);
+    $this->assertTrue($data->save(true));
 
     return $data;
 
@@ -15,27 +15,6 @@ class TestMongoEntityArrays extends MongoTestCase{
   private function _init_array_and_load(){
 
     $this->_init_array();
-
-    $loaded = new MongoEntity();
-    $loaded->load_single();
-
-    return $loaded;
-
-  }
-
-  private function _init_hash(){
-
-    $data_set = array('a' => 1, 'b' => 2, 'c' => array(0 => 'x', 5 => 'y', 10 => 'z'));
-    $data = new MongoEntity($data_set);
-    $data->save(true);
-
-    return $data;
-
-  }
-
-  private function _init_hash_and_load(){
-
-    $this->_init_hash();
 
     $loaded = new MongoEntity();
     $loaded->load_single();
@@ -55,21 +34,22 @@ class TestMongoEntityArrays extends MongoTestCase{
 
   }
 
-  function testHashArray(){
+  function testBasicArrayDotNotation(){
 
-    $loaded = $this->_init_hash_and_load();
+    $loaded = $this->_init_array_and_load();
 
     return ($this->assertTrue(is_array($loaded->c)) &&
-            $this->assertTrue($loaded->c[0] == 'x') &&
-            $this->assertTrue($loaded->c[5] == 'y') &&
-            $this->assertTrue($loaded->c[10] == 'z') );
+            $this->assertTrue($loaded->{'c.0'} == 'x') &&
+            $this->assertTrue($loaded->{'c.1'} == 'y') &&
+            $this->assertTrue($loaded->{'c.2'} == 'z') );
+
   }
 
   function testBasicArrayChange(){
 
     $loaded = $this->_init_array_and_load();
     $loaded->c = array('x', 'y', 'z', 'w');
-    $loaded->save();
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single();
@@ -82,21 +62,21 @@ class TestMongoEntityArrays extends MongoTestCase{
 
   }
 
-  function testBasicHashArrayChanged(){
+  function testBasicArrayDotNotationChanged(){
 
-    $loaded = $this->_init_hash_and_load();
-    $loaded->c = array(0 => 'x', 5 => 'y', 7 => 'yy', 10 => 'z', 15 => 'w');
-    $loaded->save();
+    $loaded = $this->_init_array_and_load();
+    $loaded->{'c.3'} = 'w';
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single();
 
-    return ($this->assertTrue(is_array($reloaded->c)) &&
-            $this->assertEqual($reloaded->c[0], 'x') &&
-            $this->assertEqual($reloaded->c[5], 'y') &&
-            $this->assertEqual($reloaded->c[7], 'yy') &&
-            $this->assertEqual($reloaded->c[10], 'z') &&
-            $this->assertEqual($reloaded->c[15], 'w') );
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertTrue($loaded->{'c.0'} == 'x') &&
+            $this->assertTrue($loaded->{'c.1'} == 'y') &&
+            $this->assertTrue($reloaded->{'c.2'} == 'z') &&
+            $this->assertTrue($reloaded->{'c.3'} == 'w') );
+
   }
 
   function testArrayPush(){
@@ -122,7 +102,7 @@ class TestMongoEntityArrays extends MongoTestCase{
     $loaded = $this->_init_array_and_load();
     $loaded->push('c', 'a');
     $loaded->push('c', 'w');
-    $loaded->save(true);  // push should only push one of these
+    $this->assertTrue($loaded->save(true));  // push should only push one of these
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -135,11 +115,12 @@ class TestMongoEntityArrays extends MongoTestCase{
 
   }
 
+  /* Note that this test is checking for failures */
   function testArrayPushExistingField(){
 
     $loaded = $this->_init_array_and_load();
     $loaded->push('b', 10);
-    $loaded->save(true);
+    $this->assertFalse($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -153,7 +134,7 @@ class TestMongoEntityArrays extends MongoTestCase{
 
     $loaded = $this->_init_array_and_load();
     $loaded->push('x', 10);
-    $loaded->save(true);  // push should only push one of these
+    $this->assertTrue($loaded->save(true));  // push should only push one of these
 
     $reloaded = new MongoEntity();
     $reloaded->load_single();
@@ -168,7 +149,7 @@ class TestMongoEntityArrays extends MongoTestCase{
     $loaded = $this->_init_array_and_load();
     $loaded->push('c', 'w');
     $loaded->push('x', 5);
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -184,7 +165,7 @@ class TestMongoEntityArrays extends MongoTestCase{
 
     $loaded = $this->_init_array_and_load();
     $loaded->pop('c', true);
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -204,7 +185,7 @@ class TestMongoEntityArrays extends MongoTestCase{
 
     $loaded = $this->_init_array_and_load();
     $loaded->pop('c', false);
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -224,7 +205,7 @@ class TestMongoEntityArrays extends MongoTestCase{
 
     $loaded = $this->_init_array_and_load();
     $loaded->pop('a');
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -237,7 +218,7 @@ class TestMongoEntityArrays extends MongoTestCase{
 
     $loaded = $this->_init_array_and_load();
     $loaded->pushAll('c', array(10,11,12));
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -254,7 +235,7 @@ class TestMongoEntityArrays extends MongoTestCase{
     $loaded = $this->_init_array_and_load();
     $loaded->pushAll('c', array(10,11,12));
     $loaded->pushAll('c', array(6, 7, 8));
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -273,7 +254,7 @@ class TestMongoEntityArrays extends MongoTestCase{
   function testArrayPullBasic(){
     $loaded = $this->_init_array_and_load();
     $loaded->pull('c', 'x');
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -289,12 +270,12 @@ class TestMongoEntityArrays extends MongoTestCase{
   function testArrayPullAdvanced(){
     $loaded = $this->_init_array_and_load();
     $loaded->push('c', 'x');
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $loaded = new MongoEntity;
     $loaded->load_single();
     $loaded->pull('c', 'x');
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -311,7 +292,7 @@ class TestMongoEntityArrays extends MongoTestCase{
     $loaded = $this->_init_array_and_load();
     $loaded->pull('c', 'x');
     $loaded->pull('c', 'z');
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -328,7 +309,7 @@ class TestMongoEntityArrays extends MongoTestCase{
   function testArrayPullAllBasic(){
     $loaded = $this->_init_array_and_load();
     $loaded->pullAll('c', array('x', 'z'));
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -345,13 +326,13 @@ class TestMongoEntityArrays extends MongoTestCase{
   function testArrayPullAllMulti(){
     $loaded = $this->_init_array_and_load();
     $loaded->pushAll('c', array('w', 'q'));
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $loaded = new MongoEntity;
     $loaded->load_single($loaded->id);
     $loaded->pullAll('c', array('x', 'z'));
     $loaded->pullAll('c', array('w', 'q'));
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -368,7 +349,7 @@ class TestMongoEntityArrays extends MongoTestCase{
   function testAddToSetBasic(){
     $loaded = $this->_init_array_and_load();
     $loaded->addToSet('c', 'g');
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity;
     $reloaded->load_single($loaded->id);
@@ -385,7 +366,7 @@ class TestMongoEntityArrays extends MongoTestCase{
   function testAddToSetNewField(){
     $loaded = $this->_init_array_and_load();
     $loaded->addToSet('d', 'g');
-    $loaded->save(true);
+    $this->assertTrue($loaded->save(true));
 
     $reloaded = new MongoEntity;
     $reloaded->load_single($loaded->id);
