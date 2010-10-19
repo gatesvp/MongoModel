@@ -530,8 +530,7 @@ class MongoEntity {
       }
 
     }
-    else {
-
+    else if(is_array($this->_data[$field])){
       $this->_addToSet[$field][] = $values;
 
       $found = false;
@@ -547,6 +546,15 @@ class MongoEntity {
       if(!$found){
         $this->_data[$field][] = $values;
       }
+
+    }
+    elseif($this->_data[$field] != null){
+      $this->_set[$field] = array($this->_data[$field], $values);
+      $this->_data[$field] = array($this->_data[$field], $values);
+    }
+    else{
+      $this->_set[$field] = array($values);
+      $this->_data[$field] = array($values);
     }
 
   }

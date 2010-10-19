@@ -380,5 +380,22 @@ class TestMongoEntityArrays extends MongoTestCase{
 
   }
 
+  function testAddToSetExistingField(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->addToSet('b', 'g');
+    $this->assertTrue($loaded->save(true));
+
+    $reloaded = new MongoEntity;
+    $reloaded->load_single($loaded->id);
+
+    return ($this->assertTrue(is_array($loaded->b)) &&
+            $this->assertTrue(is_array($reloaded->b)) &&
+            $this->assertTrue(count($loaded->b) == 2) &&
+            $this->assertTrue(count($reloaded->b) == 2) &&
+            $this->assertTrue($reloaded->b[1] == 'g') &&
+            $this->assertTrue(array_diff($loaded->b, $reloaded->b) == array()) );
+
+  }
+
 }
 ?>

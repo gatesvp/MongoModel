@@ -51,7 +51,6 @@ class AllTests extends TestSuite{
         $start_check = true;
       }
       catch (Exception $e){
-print "not started\n";
         $start_check = false;
       }
     } while (!$start_check);
