@@ -397,5 +397,41 @@ class TestMongoEntityArrays extends MongoTestCase{
 
   }
 
+  function testAddToSetArray(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->addToSet('c', array('y','w','a'));
+    $this->assertTrue($loaded->save(true));
+
+    $reloaded = new MongoEntity;
+    $reloaded->load_single($loaded->id);
+
+    return ($this->assertTrue(is_array($loaded->c)) &&
+            $this->assertTrue(is_array($reloaded->c)) &&
+            $this->assertTrue(count($loaded->c) == 5) &&
+            $this->assertTrue(count($reloaded->c) == 5) &&
+            $this->assertTrue($reloaded->c[1] == 'y') &&
+            $this->assertTrue($reloaded->c[4] == 'w') &&
+            $this->assertTrue(array_diff($loaded->c, $reloaded->c) == array()) );
+  }
+
+  function testAddToSetArrayOnNewField(){
+    $loaded = $this->_init_array_and_load();
+    $loaded->addToSet('g', array('y','w','a'));
+    $this->assertTrue($loaded->save(true));
+
+    $reloaded = new MongoEntity;
+    $reloaded->load_single($loaded->id);
+
+
+    return ($this->assertTrue(is_array($loaded->g)) &&
+            $this->assertTrue(is_array($reloaded->g)) &&
+            $this->assertTrue(count($loaded->g) == 3) &&
+            $this->assertTrue(count($reloaded->g) == 3) &&
+            $this->assertTrue($reloaded->g[0] == 'y') &&
+            $this->assertTrue($reloaded->g[2] == 'a') &&
+            $this->assertTrue(array_diff($loaded->g, $reloaded->g) == array()) );
+
+  }
+
 }
 ?>

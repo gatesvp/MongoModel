@@ -67,6 +67,21 @@ class TestMongoEntityHash extends MongoTestCase{
 
   }
 
+  function testHashArrayNewData(){
+
+    $loaded = $this->_init_hash_and_load();
+    $loaded->{'d.15'} = 'w';
+    $this->assertTrue($loaded->save(true));
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertEqual($loaded->d[15], 'w') &&
+            $this->assertEqual($reloaded->d[15], 'w') &&
+            $this->assertEqual($reloaded->{'d.15'}, 'w'));
+
+  }
+
   function testAdvancedHashArrayDoubleUpdate(){
 
     $loaded = $this->_init_hash_and_load();
@@ -78,8 +93,27 @@ class TestMongoEntityHash extends MongoTestCase{
     $reloaded->load_single();
 
     return ($this->assertEqual($loaded->c[12]['blah']['test'], 2) &&
-            $this->assertEqual($reloaded->c[12]['blah']['fie'], 3));
+            $this->assertEqual($loaded->c[12]['blah']['fie'], 3) &&
+            $this->assertEqual($reloaded->c[12]['blah']['test'], 2) &&
+            $this->assertEqual($reloaded->c[12]['blah']['fie'], 3) && 
+            $this->assertEqual($reloaded->{'c.12.blah.fie'}, 3) );
 
   }
+
+  function testAdvancedHashArrayReUpdate(){
+
+    $loaded = $this->_init_hash_and_load();
+    $loaded->{'c.12.blah.test'} = 2;
+    $loaded->{'c.12.blah.test'} = 3;
+    $this->assertTrue($loaded->save(true));
+
+    $reloaded = new MongoEntity();
+    $reloaded->load_single();
+
+    return ($this->assertEqual($loaded->c[12]['blah']['test'], 3) &&
+            $this->assertEqual($reloaded->c[12]['blah']['test'], 3));
+
+  }
+
 }
 ?>

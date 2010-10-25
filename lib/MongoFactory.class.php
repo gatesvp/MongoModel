@@ -1,4 +1,11 @@
 <?php
+/**
+ * MongoFactory is a simple Factory class for instantiating MongoEntity objects.
+ * Source: github.com/gatesvp/MongoModel
+ * @author: Gaetan Voyer-Perrault (github.com/gatesvp/)
+ * @date: 2010-10-25
+ */
+
 class MongoFactory {
 
   public static function LoadObjectById($type, $id){

@@ -1,8 +1,15 @@
 <?
+/**
+ * MongoEntity is a simple Object-oriented PHP class for interfacing with MongoDB.
+ * Source: github.com/gatesvp/MongoModel
+ * @author: Gaetan Voyer-Perrault (github.com/gatesvp/)
+ * @date: 2010-10-25
+ */
+
 // TODO
 // Add 'fsync' options on save/delete
 // Add user authentication to connection string
-// Persistent connections & pooling
+// Persistent connections & pooling?
 
 class MongoEntity {
 
@@ -515,17 +522,24 @@ class MongoEntity {
 
       foreach($values as $v){
         $this->_addToSet[$field][] = $v;
-        
-        $found = false;
-        foreach($this->_data[$field] as $f){
-          if($v == $f){
-            $found = true;
-            continue;
+ 
+        if($this->_data[$field]){       
+          $found = false;
+          foreach($this->_data[$field] as $f){
+            if($v == $f){
+              $found = true;
+              continue;
+            }
+          }
+
+          if(!$found){
+            $this->_data[$field][] = $v;
           }
         }
+        else{
 
-        if(!$found){
           $this->_data[$field][] = $v;
+
         }
       }
 
