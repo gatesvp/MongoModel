@@ -16,18 +16,13 @@ class MongoEntity {
   const MONGO_SERVER = 'localhost';
   const MONGO_PORT = 27017;
 
-  /**
-   * See here for more ideas:
-   * http://github.com/ibwhite/simplemongophp
-   * This likely needs a parent factory for returns arrays of queried objects.
-   */
-
-  protected $_mongo_server = MongoEntity::MONGO_SERVER;  # Server IP or name
-  protected $_mongo_port = MongoEntity::MONGO_PORT; # Server port number
-  protected $_mongo_database = "test";        # Effectively the database name
-  protected $_mongo_collection = "test";      # Effectively the table name
-  protected $_mongo_connection_timeout = 5000;     # 5 second default timeout on connect
-  protected $_mongo_query_timeout = 1000;
+  protected static $_mongo_server = MongoEntity::MONGO_SERVER;  # Server IP or name
+  protected static $_mongo_port = MongoEntity::MONGO_PORT; # Server port number
+  protected static $_mongo_database = "test";        # Effectively the database name
+  protected static $_mongo_collection = "test";      # Effectively the table name
+  protected static $_mongo_connection_timeout = 5000;     # 5 second default timeout on connect
+  protected static $_mongo_query_timeout = 1000;
+  protected static $_is_replica_set = true;
 
   protected $_id;
   protected $_data = array();
@@ -64,44 +59,57 @@ class MongoEntity {
   }
 
   protected static function getConnectionString($server,$port) {
-    return "$server:$port";
+    if(is_array($server) && is_array($port) && count($server) == count($port)){
+      $connections = array();
+      for($i = 0; $i < count($server); $i++){
+        $connections[] = $server[$i].":".$port[$i];
+      }
+      return join(",", $connections);
+    }
+    elseif(!is_array($server) && !is_array($port)){
+      return "$server:$port";
+    }
+    else{
+      throw new Exception('Invalid Connection String');
+    }
   }
 
-  protected function getDatabase($server = null, $port = null){
+  protected static function getDatabase($server = null, $port = null){
     if ($server == null) {
-      $server = $this->_mongo_server;
+      $server = self::$_mongo_server;
     }
     if ($port == null) {
-      $port = $this->_mongo_port;
+      $port = self::$_mongo_port;
     }
 
     // determine the connection string for this server/port
     $connectionString = self::getConnectionString($server,$port);
+    $connectionOptions = array("conect" => true, "timeout" => self::$_mongo_connection_timeout);
 
-    // if we haven't already connected to this mongo server on this port, do so
-    $mongo = new Mongo($connectionString
-                        ,array("connect" => true
-                              ,"timeout" => $this->_mongo_timeout));
+    if(self::$_is_replica_set){
+      $connectionOptions['replicaSet'] = true;
+    }
+
+    $mongo = new Mongo($connectionString, $connectionOptions);
     return $mongo;
   }
 
-  public function loadCollection($collectionName = null,$serverName = null
+  public static function loadCollection($collectionName = null,$serverName = null
                                    ,$portNumber = null,$databaseName = null) {
     if (!isset($collectionName)) {
-      $collectionName = $this->_mongo_collection;
+      $collectionName = self::$_mongo_collection;
     }
     if (!isset($serverName)) {
-      $serverName = $this->_mongo_server;
+      $serverName = self::$_mongo_server;
     }
     if (!isset($portNumber)) {
-      $portNumber = $this->_mongo_port;
+      $portNumber = self::$_mongo_port;
     }
     if (!isset($databaseName)) {
-      $databaseName = $this->_mongo_database;
+      $databaseName = self::$_mongo_database;
     }
     try {
-      $connectionString= self::getConnectionString($serverName,$portNumber);
-      $mongo = $this->getDatabase($serverName,$portNumber);
+      $mongo = self::getDatabase($serverName,$portNumber);
       $db = $mongo->selectDB($databaseName);
       $collection = $db->selectCollection($collectionName);
       return $collection;

@@ -16,26 +16,21 @@ class AllTests extends TestSuite{
     $this->TestSuite('All Tests');
 
     $this->start_mongo_basic();
+    $this->start_mongo_replica();
 
     $this->addFile('test_mongo_entity_basic.php');
     $this->addFile('test_mongo_entity_increment.php');
     $this->addFile('test_mongo_entity_arrays.php');
     $this->addFile('test_mongo_entity_hash.php');
+    $this->addFile('test_mongo_entity_replica.php');
     $this->addFile('test_mongo_factory.php');
 
   }
 
   function __destruct(){
 
-    print "Stopping server basic\n";
-    $mongo = new Mongo();
-    $db = $mongo->selectDB("admin");
-    
-    try { 
-      $db->command(array("fsync" => 1));
-      $db->command(array("shutdown" => 1));
-    }
-    catch (Exception $e) { }
+    $this->stop_mongo_basic();
+    $this->stop_mongo_replica();
 
   }
 
@@ -62,6 +57,56 @@ class AllTests extends TestSuite{
 
     return 0;
 
+  }
+
+  private function stop_mongo_basic(){
+    print "Stopping server basic\n";
+  
+    try { 
+      $mongo = new Mongo();
+      $db = $mongo->selectDB("admin");
+      $db->command(array("fsync" => 1));
+      $db->command(array("shutdown" => 1));
+    }
+    catch (Exception $e) { }
+  }
+
+  function start_mongo_replica(){
+
+    print "Starting server replica\n";
+    $output = shell_exec('/home/pubuntu/mongo/code/MongoModel/test/start_mongo_replica.sh');
+    print "Waiting for server to boot\n";
+    do{
+      $start_check = false;
+      try {
+        $mongo = new Mongo("mongodb://localhost:6900,localhost:6901,localhost:6902", array('replicaset' => true));
+        $start_check = true;
+      }
+      catch (Exception $e){
+        $start_check = false;
+      }
+    } while (!$start_check);
+
+    if(preg_match('/forked process: (\d*)/', $output, $matches) !== false){
+      $pid = $matches[1];
+      return $pid;
+    }
+
+    return 0;
+
+  }
+
+  private function stop_mongo_replica(){
+    print "Stopping server replica\n";
+    try { 
+      $mongo = new Mongo("mongodb://localhost:6900,localhost:6901,localhost:6902", array('replicaset' => true));
+      $db = $mongo->selectDB("admin");
+      $db->command(array("fsync" => 1));
+      $db->command(array("shutdown" => 1));
+    }
+    catch (Exception $e) {
+      print $e->getMessage();
+    }
   }
 
 }

@@ -29,12 +29,11 @@ class MongoFactory {
 
     if(class_exists($type)){
 
-      $obj = new $type;
       $result_set = array();
 
       try{
 
-        $collection = $obj->loadCollection();
+        $collection = call_user_func(array($type, "loadCollection"));
         $results = $collection->find($query);
 
         while($results->hasNext()){
