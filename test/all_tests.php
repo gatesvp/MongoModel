@@ -23,6 +23,7 @@ class AllTests extends TestSuite{
     $this->addFile('test_mongo_entity_arrays.php');
     $this->addFile('test_mongo_entity_hash.php');
     $this->addFile('test_mongo_entity_replica.php');
+    $this->addFile('test_mongo_entity_dynamic_collection.php');
     $this->addFile('test_mongo_factory.php');
 
   }
@@ -63,12 +64,11 @@ class AllTests extends TestSuite{
     print "Stopping server basic\n";
   
     try { 
-      $mongo = new Mongo();
-      $db = $mongo->selectDB("admin");
-      $db->command(array("fsync" => 1));
-      $db->command(array("shutdown" => 1));
+      $this->stop_mongo_node(new Mongo());
     }
-    catch (Exception $e) { }
+    catch (Exception $e) { 
+      print $e->getMessage();
+    }
   }
 
   function start_mongo_replica(){
@@ -97,16 +97,24 @@ class AllTests extends TestSuite{
   }
 
   private function stop_mongo_replica(){
-    print "Stopping server replica\n";
     try { 
-      $mongo = new Mongo("mongodb://localhost:6900,localhost:6901,localhost:6902", array('replicaset' => true));
-      $db = $mongo->selectDB("admin");
-      $db->command(array("fsync" => 1));
-      $db->command(array("shutdown" => 1));
+      print "Stopping server replica 1\n";
+      $this->stop_mongo_node(new Mongo("mongodb://localhost:6900", array('replicaset' => true)));
+      print "Stopping server replica 2\n";
+      $this->stop_mongo_node(new Mongo("mongodb://localhost:6901", array('replicaset' => true)));
+      print "Stopping server replica 3\n";
+      $this->stop_mongo_node(new Mongo("mongodb://localhost:6902", array('replicaset' => true)));
     }
     catch (Exception $e) {
       print $e->getMessage();
     }
+  }
+
+  private function stop_mongo_node($mongo){
+    $db = $mongo->selectDB("admin");
+    $db->command(array("fsync" => 1));
+    try { $db->command(array("shutdown" => 1)); }
+    catch (Exception $e) { if($e->getMessage() != "no db response") { throw $e; } }
   }
 
 }

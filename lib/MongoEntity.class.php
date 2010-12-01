@@ -22,7 +22,7 @@ class MongoEntity {
   protected static $_mongo_collection = "test";      # Effectively the table name
   protected static $_mongo_connection_timeout = 5000;     # 5 second default timeout on connect
   protected static $_mongo_query_timeout = 1000;
-  protected static $_is_replica_set = true;
+  protected static $_is_replica_set = false;
 
   protected $_id;
   protected $_data = array();
@@ -74,7 +74,7 @@ class MongoEntity {
     }
   }
 
-  protected static function getDatabase($server = null, $port = null){
+  protected static function getConnection($server = null, $port = null){
     if ($server == null) {
       $server = self::$_mongo_server;
     }
@@ -94,8 +94,7 @@ class MongoEntity {
     return $mongo;
   }
 
-  public static function loadCollection($collectionName = null,$serverName = null
-                                   ,$portNumber = null,$databaseName = null) {
+  public static function loadCollection($collectionName = null,$databaseName = null,$serverName = null,$portNumber = null) {
     if (!isset($collectionName)) {
       $collectionName = self::$_mongo_collection;
     }
@@ -109,7 +108,7 @@ class MongoEntity {
       $databaseName = self::$_mongo_database;
     }
     try {
-      $mongo = self::getDatabase($serverName,$portNumber);
+      $mongo = self::getConnection($serverName,$portNumber);
       $db = $mongo->selectDB($databaseName);
       $collection = $db->selectCollection($collectionName);
       return $collection;
