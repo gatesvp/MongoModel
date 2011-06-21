@@ -1,9 +1,8 @@
-#!/usr/bin/expect -f
-#ulimit -v unlimited;
+#!/bin/bash
+ulimit -v unlimited;
 
-spawn /home/pubuntu/mongo/mongodb-linux-i686-1.6.0/bin/mongod --dbpath /home/pubuntu/mongo/code/MongoModel/data/basic --logpath /home/pubuntu/mongo/code/MongoModel/data/basic/mongo.log --fork --smallfiles;
+#rm -rf ../data/basic
+mkdir -p ../data/basic
 
-expect "blog";
-
-send "\r";
+mongod --dbpath ../data/basic --logpath ../data/basic/mongo.log --fork --smallfiles;
 

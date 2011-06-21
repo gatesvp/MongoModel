@@ -86,5 +86,13 @@ class TestMongoFactory extends MongoTestCase{
 
   }
 
+  public function testFactoryGetCollection(){
+
+    $collection = MongoFactory::GetEntityCollection('MongoEntity');
+
+    return $this->assertNotNull($collection);
+
+  }
+
 }
 ?>

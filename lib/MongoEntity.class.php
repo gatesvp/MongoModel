@@ -22,7 +22,9 @@ class MongoEntity {
   protected static $_mongo_collection = "test";      # Effectively the table name
   protected static $_mongo_connection_timeout = 5000;     # 5 second default timeout on connect
   protected static $_mongo_query_timeout = 1000;
-  protected static $_is_replica_set = false;
+  protected static $_mongo_is_replica_set = false;
+  protected static $_mongo_user_name = '';
+  protected static $_mongo_password = '';
 
   protected $_id;
   protected $_data = array();
@@ -58,35 +60,58 @@ class MongoEntity {
     $this->_data = $data;
   }
 
-  protected static function getConnectionString($server,$port) {
+  protected static function getConnectionString($server, $port, $userName, $password) {
+
+    $auth_info = '';
+    $db_info = '';
+    $server_port = '';
+    if($userName != '' && $password != ''){
+      $auth_info = "$userName:$password";
+      $db_info = static::$_mongo_database;
+    }
+
     if(is_array($server) && is_array($port) && count($server) == count($port)){
       $connections = array();
       for($i = 0; $i < count($server); $i++){
         $connections[] = $server[$i].":".$port[$i];
       }
-      return join(",", $connections);
+      $server_port = join(",", $connections);
     }
     elseif(!is_array($server) && !is_array($port)){
-      return "$server:$port";
+      $server_port = "$server:$port";
     }
     else{
       throw new Exception('Invalid Connection String');
     }
+
+    if($auth_info){
+      return "mongodb://".$auth_info.'@'.$server_port.'/'.$db_info;
+    }
+    else {
+      return "mongodb://".$server_port;
+    }
+
   }
 
-  protected static function getConnection($server = null, $port = null){
+  protected static function getConnection($server = null, $port = null, $userName = null, $password = null){
     if ($server == null) {
-      $server = self::$_mongo_server;
+      $server = static::$_mongo_server;
     }
     if ($port == null) {
-      $port = self::$_mongo_port;
+      $port = static::$_mongo_port;
+    }
+    if ($userName == null) {
+      $userName = static::$_mongo_user_name;
+    }
+    if ($password == null) {
+      $password = static::$_mongo_password;
     }
 
     // determine the connection string for this server/port
-    $connectionString = self::getConnectionString($server,$port);
-    $connectionOptions = array("conect" => true, "timeout" => self::$_mongo_connection_timeout);
+    $connectionString = self::getConnectionString($server, $port, $userName, $password);
+    $connectionOptions = array("conect" => true, "timeout" => static::$_mongo_connection_timeout);
 
-    if(self::$_is_replica_set){
+    if(static::$_mongo_is_replica_set){
       $connectionOptions['replicaSet'] = true;
     }
 
@@ -94,27 +119,34 @@ class MongoEntity {
     return $mongo;
   }
 
-  public static function loadCollection($collectionName = null,$databaseName = null,$serverName = null,$portNumber = null) {
+  public static function loadCollection($collectionName = null,$databaseName = null,$serverName = null,$portNumber = null,$userName = null, $password = null) {
     if (!isset($collectionName)) {
-      $collectionName = self::$_mongo_collection;
+      $collectionName = static::$_mongo_collection;
     }
     if (!isset($serverName)) {
-      $serverName = self::$_mongo_server;
+      $serverName = static::$_mongo_server;
     }
     if (!isset($portNumber)) {
-      $portNumber = self::$_mongo_port;
+      $portNumber = static::$_mongo_port;
     }
     if (!isset($databaseName)) {
-      $databaseName = self::$_mongo_database;
+      $databaseName = static::$_mongo_database;
+    }
+    if (!isset($userName)) {
+      $userName = static::$_mongo_user_name;
+    }
+    if (!isset($password)) {
+      $password = static::$_mongo_password;
     }
     try {
-      $mongo = self::getConnection($serverName,$portNumber);
+      $mongo = self::getConnection($serverName, $portNumber, $userName, $password);
       $db = $mongo->selectDB($databaseName);
       $collection = $db->selectCollection($collectionName);
       return $collection;
     }
     catch (Exception $e) {
       /* Add logging */
+      print $e->getMessage()."\n";
     }
     return FALSE;
   }
@@ -302,7 +334,7 @@ class MongoEntity {
    * @return Success of the save (based on assumptions)
    */
   public function save($safe = false, $upsert = true){
-    $collection = $this->loadCollection();
+    $collection = self::loadCollection();
     
     if($collection){
       
@@ -411,16 +443,21 @@ class MongoEntity {
 
     $field = $this->_remap_field($field);
 
-    $this->_data[$field] += $amount;
-    $this->_increment[$field] = $amount;
+    if(isset($this->_data[$field])){
+      $this->_data[$field] += $amount;
+    }
+    else{
+      $this->_data[$field] = $amount;
+    }
 
+    $this->_increment[$field] = $amount;
   }
 
   public function push($field, $value){
 
     $field = $this->_remap_field($field);
 
-    if(is_array($this->_data[$field])){
+    if(isset($this->_data[$field]) && is_array($this->_data[$field])){
       array_push($this->_data[$field], $value);
     }
     else if(isset($this->_data[$field])){
@@ -438,7 +475,7 @@ class MongoEntity {
 
     $field = $this->_remap_field($field);
 
-    if(is_array($this->_data[$field])){
+    if(isset($this->_data[$field]) && is_array($this->_data[$field])){
       if($back){
         array_pop($this->_data[$field]);
         $this->_pop[$field] = 1;
@@ -466,7 +503,7 @@ class MongoEntity {
       $this->$field = array($value);
     }
 
-    if(is_array($this->_pushAll[$field])){
+    if(isset($this->_pushAll[$field]) && is_array($this->_pushAll[$field])){
       $this->_pushAll[$field] = array_merge($this->_pushAll[$field], $values);
     }
     else{
@@ -498,7 +535,7 @@ class MongoEntity {
          So we append the existing data and new data to "pullAll", then we unset "pull".
       */
       if(isset($this->_pull[$field])){
-        if(is_array($this->_pullAll[$field])){
+        if(isset($this->_pullAll[$field]) && is_array($this->_pullAll[$field])){
           $this->_pullAll[$field] = array_merge($this->_pullAll[$field], array($this->_pull[$field], $value));
         }
         else{
@@ -522,10 +559,24 @@ class MongoEntity {
   }
 
   public function addToSet($field, $values = array()){
-
+    /* 
+       This method has four cases:
+       - field exists vs. field DNE
+       - values is array vs. !is array
+    */
     $field = $this->_remap_field($field);
 
-    if(is_array($values)){
+    if(!isset($this->_data[$field])){
+      if(is_array($values)){
+        $this->_addToSet[$field] = $values;
+        $this->_data[$field] = $values;
+      }
+      else{
+        $this->_addToSet[$field] = array($values);
+        $this->_data[$field] = array($values);
+      }
+    }
+    else if(is_array($values)){
 
       foreach($values as $v){
         $this->_addToSet[$field][] = $v;
@@ -574,7 +625,7 @@ class MongoEntity {
       $this->_data[$field] = array($this->_data[$field], $values);
     }
     else{
-      $this->_set[$field] = array($values);
+      $this->_addToSet[$field] = array($values);
       $this->_data[$field] = array($values);
     }
 

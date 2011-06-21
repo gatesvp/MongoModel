@@ -77,7 +77,7 @@ class TestMongoReplica extends MongoTestCase{
 
   function testLoadBasic(){
     $data = new MongoReplicaTest(array('a' => 1, 'b' => 2));
-    $this->assertTrue($data->save());
+    $this->assertTrue($data->save(true));
 
     $data2 = new MongoReplicaTest();
     $data2->load_single();
@@ -90,7 +90,7 @@ class TestMongoReplica extends MongoTestCase{
 
   function testLoadSpecific(){
     $data = new MongoReplicaTest(array('a' => 1, 'b' => 2));
-    $this->assertTrue($data->save());
+    $this->assertTrue($data->save(true));
 
     $data2 = new MongoReplicaTest(array('a' => 10, 'b' => 8));
     $data2->save();

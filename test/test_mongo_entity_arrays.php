@@ -84,7 +84,7 @@ class TestMongoEntityArrays extends MongoTestCase{
     $loaded = $this->_init_array_and_load();
 
     $loaded->push('c', 'w');
-    $loaded->save();
+    $loaded->save(true);
 
     $reloaded = new MongoEntity();
     $reloaded->load_single($loaded->id);
@@ -410,7 +410,7 @@ class TestMongoEntityArrays extends MongoTestCase{
             $this->assertTrue(count($loaded->c) == 5) &&
             $this->assertTrue(count($reloaded->c) == 5) &&
             $this->assertTrue($reloaded->c[1] == 'y') &&
-            $this->assertTrue($reloaded->c[4] == 'w') &&
+            $this->assertTrue($reloaded->c[3] == 'w') &&
             $this->assertTrue(array_diff($loaded->c, $reloaded->c) == array()) );
   }
 
@@ -422,7 +422,6 @@ class TestMongoEntityArrays extends MongoTestCase{
     $reloaded = new MongoEntity;
     $reloaded->load_single($loaded->id);
 
-
     return ($this->assertTrue(is_array($loaded->g)) &&
             $this->assertTrue(is_array($reloaded->g)) &&
             $this->assertTrue(count($loaded->g) == 3) &&
@@ -430,6 +429,28 @@ class TestMongoEntityArrays extends MongoTestCase{
             $this->assertTrue($reloaded->g[0] == 'y') &&
             $this->assertTrue($reloaded->g[2] == 'a') &&
             $this->assertTrue(array_diff($loaded->g, $reloaded->g) == array()) );
+
+  }
+
+  function testAddToSetArrayParallel(){
+
+    $obj1 = new MongoEntity;
+    $obj2 = new MongoEntity;
+
+    $obj1->id = 123;
+    $obj1->addToSet("blah", 1);
+    $obj2->id = 123;
+    $obj2->addToSet("blah", 2);
+
+    $obj1->save(true);
+    $obj2->save(true);
+
+    $loaded = new MongoEntity();
+    $loaded->load_single(123);
+
+    return ($this->assertTrue(is_array($loaded->blah)) &&
+        $this->assertTrue(count($loaded->blah) == 2)
+    );
 
   }
 

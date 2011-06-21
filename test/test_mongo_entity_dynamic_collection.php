@@ -3,8 +3,11 @@
 class MongoDynamicTest extends MongoEntity {
 
    public static function loadCollection($collectionName = null,$databaseName = null,$serverName = null,$portNumber = null){
+$coll = parent::loadCollection("bar", "baz");
 
-     return parent::LoadCollection("bar", "baz");
+var_dump($coll);
+
+return $coll;
 
    }
 
@@ -36,7 +39,7 @@ class TestMongoDynamic extends MongoTestCase{
 
   function testLoadBasic(){
     $data = new MongoDynamicTest(array('a' => 1, 'b' => 2));
-    $this->assertTrue($data->save());
+    $this->assertTrue($data->save(true));
 
     $data2 = new MongoDynamicTest();
     $data2->load_single();
@@ -66,7 +69,7 @@ class TestMongoDynamic extends MongoTestCase{
 
   function testLoadSpecificFields(){
     $data = new MongoDynamicTest(array('a' => 1, 'b' => 2, 'c' => 3));
-    $this->assertTrue($data->save());
+    $this->assertTrue($data->save(true));
     $id = $data->id;
 
     $load = new MongoDynamicTest();

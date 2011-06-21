@@ -1,9 +1,12 @@
-#!/usr/bin/expect -f
-#ulimit -v unlimited;
+#!/bin/bash
+ulimit -v unlimited;
 
-spawn /home/pubuntu/mongo/mongodb-linux-i686-1.6.0/bin/mongod --dbpath /home/pubuntu/mongo/code/MongoModel/data --logpath /home/pubuntu/mongo/code/MongoModel/data/mongo.log --fork;
+#rm -rf ../data/auth
+mkdir -p ../data/auth
 
-expect "blog";
+mongod --dbpath ../data/auth --logpath ../data/auth/mongo.log --port 6904 --auth --fork;
 
-send "\r";
+sleep 3
+
+mongo localhost:6904/admin auth_config.js --quiet 
 

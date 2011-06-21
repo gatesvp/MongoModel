@@ -17,13 +17,15 @@ class AllTests extends TestSuite{
 
     $this->start_mongo_basic();
     $this->start_mongo_replica();
+    $this->start_mongo_auth();
 
     $this->addFile('test_mongo_entity_basic.php');
     $this->addFile('test_mongo_entity_increment.php');
     $this->addFile('test_mongo_entity_arrays.php');
     $this->addFile('test_mongo_entity_hash.php');
     $this->addFile('test_mongo_entity_replica.php');
-    $this->addFile('test_mongo_entity_dynamic_collection.php');
+#    $this->addFile('test_mongo_entity_dynamic_collection.php');
+    $this->addFile('test_mongo_entity_auth.php');
     $this->addFile('test_mongo_factory.php');
 
   }
@@ -32,13 +34,14 @@ class AllTests extends TestSuite{
 
     $this->stop_mongo_basic();
     $this->stop_mongo_replica();
+    $this->stop_mongo_auth();
 
   }
 
   function start_mongo_basic(){
 
     print "Starting server basic\n";
-    $output = shell_exec('/home/pubuntu/mongo/code/MongoModel/test/start_mongo_basic.sh');
+    $output = shell_exec('./start_mongo_basic.sh');
     print "Waiting for server to boot\n";
     do{
       $start_check = false;
@@ -74,7 +77,7 @@ class AllTests extends TestSuite{
   function start_mongo_replica(){
 
     print "Starting server replica\n";
-    $output = shell_exec('/home/pubuntu/mongo/code/MongoModel/test/start_mongo_replica.sh');
+    $output = shell_exec('./start_mongo_replica.sh');
     print "Waiting for server to boot\n";
     do{
       $start_check = false;
@@ -106,6 +109,45 @@ class AllTests extends TestSuite{
       $this->stop_mongo_node(new Mongo("mongodb://localhost:6902", array('replicaset' => true)));
     }
     catch (Exception $e) {
+      print $e->getMessage();
+    }
+  }
+
+  function start_mongo_auth(){
+
+    print "Starting server auth\n";
+    $output = shell_exec('./start_mongo_auth.sh');
+    print "Waiting for server to boot\n";
+    do{
+      $start_check = false;
+      try {
+        $mongo = new Mongo('mongodb://theadmin:anadminpassword@localhost:6904/admin');
+        #$mongo = new Mongo("localhost:6904");
+        $start_check = true;
+      }
+      catch (Exception $e){
+        $start_check = false;
+      }
+      print("...\n");
+      sleep(1);
+    } while (!$start_check);
+
+    if(preg_match('/forked process: (\d*)/', $output, $matches) !== false){
+      $pid = $matches[1];
+      return $pid;
+    }
+
+    return 0;
+
+  }
+
+  private function stop_mongo_auth(){
+    print "Stopping server auth\n";
+  
+    try { 
+      $this->stop_mongo_node(new Mongo('localhost:6904'));
+    }
+    catch (Exception $e) { 
       print $e->getMessage();
     }
   }
