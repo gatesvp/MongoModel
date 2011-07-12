@@ -146,7 +146,6 @@ class MongoEntity {
     }
     catch (Exception $e) {
       /* Add logging */
-      print $e->getMessage()."\n";
     }
     return FALSE;
   }
@@ -393,9 +392,11 @@ class MongoEntity {
           }
         }
         catch(MongoCursorException $e) {
+          /* log exception */
           return false;
         }
         catch(MongoCursorTimeoutException $e){
+          /* log exception */
           return false;
         }
       }

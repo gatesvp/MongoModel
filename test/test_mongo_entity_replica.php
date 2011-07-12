@@ -11,7 +11,21 @@ class MongoReplicaTest extends MongoEntity {
 
 }
 
-class TestMongoReplica extends MongoTestCase{
+class TestMongoReplica extends UnitTestCase{
+
+  function setUp(){
+
+    $collection = MongoReplicaTest::loadCollection();
+    $collection->drop();
+
+  }
+
+  function teardown(){
+
+    $collection = MongoReplicaTest::loadCollection();
+    $collection->drop();
+
+  }
 
   function testCreateBasic(){
     $data = new MongoReplicaTest();
@@ -93,7 +107,7 @@ class TestMongoReplica extends MongoTestCase{
     $this->assertTrue($data->save(true));
 
     $data2 = new MongoReplicaTest(array('a' => 10, 'b' => 8));
-    $data2->save();
+    $data2->save(true);
     $id = $data2->id;
 
     $data3 = new MongoReplicaTest();

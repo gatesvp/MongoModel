@@ -70,7 +70,7 @@ class AllTests extends TestSuite{
       $this->stop_mongo_node(new Mongo());
     }
     catch (Exception $e) { 
-      print $e->getMessage();
+      // note exception means that shutdown succeeded
     }
   }
 
@@ -103,13 +103,23 @@ class AllTests extends TestSuite{
     try { 
       print "Stopping server replica 1\n";
       $this->stop_mongo_node(new Mongo("mongodb://localhost:6900", array('replicaset' => true)));
+    }
+    catch (Exception $e) {
+      // note exception means that shutdown succeeded
+    }
+    try {
       print "Stopping server replica 2\n";
       $this->stop_mongo_node(new Mongo("mongodb://localhost:6901", array('replicaset' => true)));
+    }
+    catch (Exception $e) {
+      // note exception means that shutdown succeeded
+    }
+    try {
       print "Stopping server replica 3\n";
       $this->stop_mongo_node(new Mongo("mongodb://localhost:6902", array('replicaset' => true)));
     }
     catch (Exception $e) {
-      print $e->getMessage();
+      // note exception means that shutdown succeeded
     }
   }
 
@@ -148,7 +158,7 @@ class AllTests extends TestSuite{
       $this->stop_mongo_node(new Mongo('localhost:6904'));
     }
     catch (Exception $e) { 
-      print $e->getMessage();
+      // note exception means that shutdown succeeded
     }
   }
 
